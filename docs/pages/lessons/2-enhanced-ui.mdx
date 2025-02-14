@@ -294,7 +294,43 @@ The chat application now has a modern, responsive UI with:
 - Smooth loading states and transitions
 - Error handling for failed requests
 
+## Testing the Application
+
+### Starting the Development Servers
+1. Start the Flask backend (in one terminal):
+```bash
+cd demo-project
+python app.py
+```
+This will start the backend server at `http://localhost:5000`
+
+2. Start the React frontend (in another terminal):
+```bash
+cd demo-project
+npm run dev
+```
+This will start the development server, typically at `http://localhost:5173`
+
+### Testing the Chat Interface
+1. Open your browser and navigate to `http://localhost:5173`
+2. You should see the chat interface with:
+   - A header showing "AI Chat Assistant"
+   - A card containing the chat area
+   - A textarea for entering messages
+   - A send button
+3. Try sending a message:
+   - Type something in the textarea
+   - Click the send button or press Enter
+   - You should see your message appear in a blue bubble on the right
+   - The assistant's response should appear in a gray bubble on the left
+
+### Troubleshooting
+- If styles aren't loading, make sure all dependencies are installed and the development server is running
+- If messages aren't sending, check that the Flask backend is running and the `.env` file contains your OpenAI API key
+- Check the browser console for any error messages
+
 ## Notes
 - Make sure to have proper TypeScript configuration for path aliases
 - Keep the tailwind.config.js updated with the correct content paths
 - Use the proper versions of dependencies to avoid compatibility issues
+- Always start both the backend and frontend servers for full functionality
