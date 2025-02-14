@@ -1,0 +1,300 @@
+# Lesson 2: Enhanced UI with ShadCN
+
+## Overview
+In this lesson, we will enhance our chat application's user interface using ShadCN UI, a collection of reusable components built with Radix UI and Tailwind CSS. We'll also implement advanced features like message threading and chat history.
+
+## Learning Objectives
+- Set up and configure ShadCN UI in our React application
+- Create a modern, responsive chat interface
+- Implement message threading and history
+- Add loading states and error handling
+- Style components using Tailwind CSS
+
+## Step 1: Setting Up ShadCN UI
+
+### 1.1 Install Dependencies
+```bash
+npm install @shadcn/ui class-variance-authority clsx lucide-react tailwind-merge tailwindcss-animate @radix-ui/react-slot
+```
+
+### 1.2 Configure TypeScript
+Create `tsconfig.json` in your project root:
+```json
+{
+  "compilerOptions": {
+    "target": "es5",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true,
+    "module": "esnext",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"]
+    }
+  },
+  "include": ["src", "App.jsx", "lib/**/*"],
+  "exclude": ["node_modules"]
+}
+```
+
+### 1.3 Set Up ShadCN Configuration
+Create `components.json` in your project root:
+```json
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "new-york",
+  "rsc": false,
+  "tsx": true,
+  "tailwind": {
+    "config": "tailwind.config.js",
+    "css": "styles/globals.css",
+    "baseColor": "zinc",
+    "cssVariables": true,
+    "prefix": ""
+  },
+  "aliases": {
+    "components": "@/components",
+    "utils": "@/lib/utils",
+    "ui": "@/components/ui",
+    "lib": "@/lib",
+    "hooks": "@/hooks"
+  },
+  "iconLibrary": "lucide"
+}
+```
+
+### 1.4 Create Utility Functions
+Create `lib/utils.ts`:
+```typescript
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+```
+
+### 1.5 Update Tailwind Configuration
+Update `tailwind.config.js`:
+```javascript
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  darkMode: ["class"],
+  content: [
+    "./index.html",
+    "./App.jsx",
+    "./components/**/*.{js,ts,jsx,tsx}",
+    "./lib/**/*.{js,ts,jsx,tsx}"
+  ],
+  theme: {
+    extend: {
+      colors: {
+        border: "hsl(var(--border))",
+        input: "hsl(var(--input))",
+        ring: "hsl(var(--ring))",
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
+        primary: {
+          DEFAULT: "hsl(var(--primary))",
+          foreground: "hsl(var(--primary-foreground))",
+        },
+        secondary: {
+          DEFAULT: "hsl(var(--secondary))",
+          foreground: "hsl(var(--secondary-foreground))",
+        },
+        destructive: {
+          DEFAULT: "hsl(var(--destructive))",
+          foreground: "hsl(var(--destructive-foreground))",
+        },
+        muted: {
+          DEFAULT: "hsl(var(--muted))",
+          foreground: "hsl(var(--muted-foreground))",
+        },
+        accent: {
+          DEFAULT: "hsl(var(--accent))",
+          foreground: "hsl(var(--accent-foreground))",
+        },
+        popover: {
+          DEFAULT: "hsl(var(--popover))",
+          foreground: "hsl(var(--popover-foreground))",
+        },
+        card: {
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
+        },
+      },
+      borderRadius: {
+        lg: `var(--radius)`,
+        md: `calc(var(--radius) - 2px)`,
+        sm: "calc(var(--radius) - 4px)",
+      },
+    },
+  },
+  plugins: [require("tailwindcss-animate")],
+}
+```
+
+## Step 2: Adding UI Components
+
+### 2.1 Install Your First Component
+```bash
+npx shadcn@latest add button
+```
+
+### 2.2 Install Required Components
+Let's add the components we need for our chat interface:
+
+```bash
+npx shadcn@latest add card
+npx shadcn@latest add textarea
+npx shadcn@latest add button
+```
+
+### 2.3 Create the Enhanced Chat Component
+Update the Chat component to use ShadcN UI components:
+
+```typescript
+import React, { useState } from 'react';
+import { Card } from "./ui/card";
+import { Button } from "./ui/button";
+import { Textarea } from "./ui/textarea";
+
+interface Message {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+export function Chat() {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [threadId, setThreadId] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() || isLoading) return;
+
+    const userMessage = { role: 'user', content: input };
+    setMessages(prev => [...prev, userMessage]);
+    setInput('');
+    setIsLoading(true);
+
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: input, threadId }),
+      });
+
+      if (!response.ok) throw new Error('Failed to send message');
+
+      const data = await response.json();
+      setThreadId(data.threadId);
+      
+      const assistantMessage = { 
+        role: 'assistant', 
+        content: data.message 
+      };
+      setMessages(prev => [...prev, assistantMessage]);
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="container mx-auto max-w-4xl p-4">
+      <Card>
+        <div className="grid gap-4 p-6">
+          <div className="space-y-4">
+            {messages.map((message, index) => (
+              <div
+                key={index}
+                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                <div
+                  className={`rounded-lg px-4 py-2 max-w-[80%] ${
+                    message.role === 'user'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted'
+                  }`}
+                >
+                  <p className="text-sm">{message.content}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <form onSubmit={handleSubmit} className="flex gap-2">
+            <Textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Type your message..."
+              className="min-h-[80px] flex-1"
+            />
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="self-end"
+            >
+              {isLoading ? 'Sending...' : 'Send'}
+            </Button>
+          </form>
+        </div>
+      </Card>
+    </div>
+  );
+}
+```
+
+## Step 3: Styling and UI Features
+
+### 3.1 Message Bubbles
+We've implemented message bubbles with different styles for user and assistant messages:
+- User messages are aligned to the right with primary color background
+- Assistant messages are aligned to the left with muted background
+- Messages have a maximum width of 80% to ensure readability
+- Rounded corners and proper padding for better visual appearance
+
+### 3.2 Input Area
+The input area features:
+- A resizable textarea that grows with content
+- Minimum height of 80px for comfortable typing
+- A send button aligned to the bottom
+- Loading state indication when sending messages
+
+### 3.3 Layout and Spacing
+The chat interface uses:
+- A centered container with maximum width for optimal reading
+- Consistent spacing using Tailwind's gap and padding utilities
+- A card component to contain the entire chat interface
+- Grid layout for proper spacing between messages and input area
+
+## Step 4: Error Handling and Loading States
+We've implemented:
+- Disabled submit button during message sending
+- Loading indicator in the send button
+- Error catching and logging for failed API requests
+- Input validation to prevent empty messages
+
+## Current Status
+The chat application now has a modern, responsive UI with:
+- Clean message bubbles with proper alignment
+- Consistent styling using ShadcN UI components
+- Smooth loading states and transitions
+- Error handling for failed requests
+
+## Notes
+- Make sure to have proper TypeScript configuration for path aliases
+- Keep the tailwind.config.js updated with the correct content paths
+- Use the proper versions of dependencies to avoid compatibility issues

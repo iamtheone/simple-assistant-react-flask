@@ -1,0 +1,310 @@
+# Lesson 1: Setting Up Flask and React
+
+## Overview
+In this lesson, we will set up the foundation for our chat application by creating a basic Flask backend and React frontend. We'll establish a simple communication channel between the two, setting the stage for more advanced features in later lessons.
+
+## Learning Objectives
+- Set up a Python virtual environment
+- Create a basic Flask backend with a test endpoint
+- Build a React frontend with a simple form
+- Implement basic client-server communication
+- Structure the project for future enhancements
+
+## Prerequisites
+- Python 3.8 or higher
+- Node.js and npm
+- Basic knowledge of Python, JavaScript, and React
+- OpenAI API key
+
+## Project Structure
+Before we begin, let's understand our project structure:
+```
+demo-project/
+├── app.py              # Flask backend
+├── requirements.txt     # Python dependencies
+├── .env                # Environment variables
+├── App.jsx             # React frontend
+├── package.json        # Node.js dependencies
+└── styles/             # CSS styles
+    └── globals.css     # Global styles
+```
+
+
+## Step 1: Setting Up the Development Environment
+
+### 1.1 Create Project Directory
+```bash
+mkdir demo-project
+cd demo-project
+```
+
+### 1.2 Set Up Python Virtual Environment
+```bash
+# Create virtual environment
+python -m venv venv
+
+# Activate virtual environment
+source venv/bin/activate  # On macOS/Linux
+# or
+venv\Scripts\activate     # On Windows
+```
+
+### 1.3 Install Backend Dependencies
+Create a `requirements.txt` file with the following content:
+```text
+flask
+flask-cors
+python-dotenv
+```
+
+Then install the dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+### 1.4 Set Up Environment Variables
+Create a `.env` file in the project root:
+```plaintext
+OPENAI_API_KEY=your_api_key_here
+```
+
+## Step 2: Building the Flask Backend
+
+
+### Backend (app.py)
+```python
+from flask import Flask, request, Response, stream_with_context
+from flask_cors import CORS
+import openai
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+app = Flask(__name__)
+CORS(app)
+
+# Test route to verify backend is working
+@app.route("/", methods=["GET"])
+def hello():
+    return "Hello, World!"
+
+@app.route("/chat", methods=["POST"])
+def chat():
+    data = request.json
+    message = data.get("message", "")
+    
+    # For now, just echo the message back
+    response = f"Server received: {message}"
+    
+    return {"response": response}
+
+if __name__ == "__main__":
+    app.run(debug=True)
+```
+
+### Explanation of Changes
+- **New Route**: The route `@app.route("/", methods=["GET"])` was added to handle GET requests to the root URL, returning the message "Hello, World!".
+
+This addition allows us to verify that our Flask backend is working correctly. When we navigate to `http://localhost:5000/`, we should see 'Hello, World!' displayed on the screen. This demonstrates how Flask serves as the backend for our React application, enabling communication between the frontend and the backend.
+
+### Frontend (App.jsx)
+```javascript
+import React, { useState } from 'react';
+
+function App() {
+  const [message, setMessage] = useState('');
+  const [response, setResponse] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setResponse('');
+
+    const eventSource = new EventSource(
+      `http://localhost:5000/chat?message=${encodeURIComponent(message)}`
+    );
+
+    eventSource.onmessage = (event) => {
+      setResponse((prev) => prev + event.data);
+    };
+
+    eventSource.onerror = () => {
+      eventSource.close();
+      setIsLoading(false);
+    };
+  };
+
+  return (
+    <div className="container mx-auto p-4">
+      <form onSubmit={handleSubmit}>
+        <input
+          type="text"
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          className="border p-2 w-full mb-4"
+        />
+        <button 
+          type="submit"
+          disabled={isLoading}
+          className="bg-blue-500 text-white px-4 py-2 rounded"
+        >
+          Send
+        </button>
+      </form>
+      <div className="mt-4 whitespace-pre-wrap">
+        {response}
+      </div>
+    </div>
+  );
+}
+
+export default App;
+```
+
+## Step 3: Creating the React Frontend
+
+
+To set up the React frontend, we used Create React App, which provides a modern build setup with no configuration. Here’s how we set it up:
+
+### Step 1: Create a New React App
+In the `demo-project` directory, we ran the following command:
+```bash
+npx create-react-app my-app
+```
+This command creates a new directory called `my-app` with all the necessary files and folders for a React application.
+
+### Step 2: Install Additional Dependencies
+After creating the React app, we installed the necessary dependencies for our project. In the `my-app` directory, we ran:
+```bash
+npm install react-markdown react-syntax-highlighter tailwindcss
+```
+These libraries help with rendering Markdown, syntax highlighting, and styling our application.
+
+### Step 3: Modify the App Component
+We then modified the `App.jsx` file to include our chat functionality, which allows users to send messages and receive responses from the Flask backend.
+
+### Example Code for `App.jsx`
+Here’s the code we used in `App.jsx`:
+```javascript
+import React, { useState } from 'react';
+
+function App() {
+  const [message, setMessage] = useState('');
+  const [response, setResponse] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setResponse('');
+
+    const eventSource = new EventSource(
+      `http://localhost:5000/chat?message=${encodeURIComponent(message)}`
+    );
+
+    eventSource.onmessage = (event) => {
+      setResponse((prev) => prev + event.data);
+    };
+
+    eventSource.onerror = () => {
+      eventSource.close();
+      setIsLoading(false);
+    };
+  };
+
+  return (
+    <div className="container mx-auto p-4">
+      <form onSubmit={handleSubmit}>
+        <input
+          type="text"
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          className="border p-2 w-full mb-4"
+        />
+        <button 
+          type="submit"
+          disabled={isLoading}
+          className="bg-blue-500 text-white px-4 py-2 rounded"
+        >
+          Send
+        </button>
+      </form>
+      <div className="mt-4 whitespace-pre-wrap">
+        {response}
+      </div>
+    </div>
+  );
+}
+
+export default App;
+```
+
+This setup allows our React application to communicate with the Flask backend, enabling a seamless chat experience.
+
+## Step 4: Connecting Frontend and Backend
+
+### 4.1 Configure CORS
+The Flask backend is already configured to accept requests from the React frontend through the `CORS(app)` middleware.
+
+### 4.2 Test the Connection
+1. Start the Flask backend:
+```bash
+python app.py
+```
+
+2. In a new terminal, start the React frontend:
+```bash
+npm start
+```
+
+3. Visit `http://localhost:3000` in your browser. You should see the chat interface.
+4. Try sending a message. You should receive a response from the OpenAI API.
+
+## Step 5: Testing and Troubleshooting
+
+### Common Issues and Solutions
+1. **Backend Connection Error**
+   - Ensure Flask is running on port 5000
+   - Check CORS configuration
+   - Verify the API endpoint URLs in React
+
+2. **OpenAI API Issues**
+   - Verify your API key is correctly set in `.env`
+   - Check for any rate limiting or quota issues
+
+3. **Frontend Display Issues**
+   - Clear browser cache
+   - Check browser console for errors
+   - Verify all npm dependencies are installed
+
+1. Create a virtual environment:
+   ```bash
+   python -m venv venv
+   ```
+2. Activate the virtual environment:
+   ```bash
+   source venv/bin/activate
+   ```
+
+## Installation Instructions
+1. Install backend dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+2. Install frontend dependencies:
+   ```bash
+   npm install
+   ```
+
+## Starting the Application
+1. Run the Flask backend:
+   ```bash
+   python app.py
+   ```
+2. Run the React frontend:
+   ```bash
+   npm start
+   ```
+## Notes
+Add any challenges faced and solutions implemented during this phase.
